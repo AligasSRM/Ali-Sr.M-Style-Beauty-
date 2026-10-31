@@ -8,7 +8,6 @@ export function AdminSidebar() {
         <Link href="/admin">Overview</Link>
         <Link href="/admin/products">Products</Link>
         <Link href="/admin/orders">Orders</Link>
-        <Link href="/admin/customers">Customers</Link>
       </nav>
     </aside>
   );
