@@ -6,13 +6,13 @@ export function ProductForm() {
     const form = new FormData(event.currentTarget);
     const payload = {
       name: String(form.get('name') || ''),
+      slug: String(form.get('slug') || String(form.get('name') || '').toLowerCase().replace(/\s+/g, '-')),
       category: String(form.get('category') || ''),
       price: Number(form.get('price') || 0),
       description: String(form.get('description') || ''),
       badge: String(form.get('badge') || 'New'),
       stock: Number(form.get('stock') || 0),
       image: String(form.get('image') || 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80'),
-      slug: String(form.get('slug') || String(form.get('name') || '').toLowerCase().replace(/\s+/g, '-')),
     };
 
     const response = await fetch('/api/products', {
@@ -25,9 +25,10 @@ export function ProductForm() {
     if (result.success) {
       alert('Product created successfully');
       window.location.reload();
-    } else {
-      alert(result.message || 'Failed to create product');
+      return;
     }
+
+    alert(result.message || 'Failed to create product');
   }
 
   return (

@@ -1,16 +1,15 @@
 import { prisma } from '@/lib/prisma';
-import { requireAdmin } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
 export default async function AdminPage() {
-  const user = requireAdmin();
-  if (!user) {
+  const user = getCurrentUser();
+  if (!user || user.role !== 'ADMIN') {
     redirect('/login');
   }
 
-  const products = await prisma.product.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
+  const products = await prisma.product.count();
+  const orders = await prisma.order.count();
 
   return (
     <main className="page-shell admin-layout">
@@ -25,16 +24,14 @@ export default async function AdminPage() {
 
       <section className="panel admin-card">
         <h1>Dashboard</h1>
-        <p>Signed in as {user.name}</p>
-
         <div className="stats-grid">
           <div className="stat-box">
             <span>Products</span>
-            <strong>{products.length}</strong>
+            <strong>{products}</strong>
           </div>
           <div className="stat-box">
-            <span>Role</span>
-            <strong>{user.role}</strong>
+            <span>Orders</span>
+            <strong>{orders}</strong>
           </div>
         </div>
       </section>

@@ -26,7 +26,7 @@ export function signUserToken(user: AuthUser) {
   );
 }
 
-export function verifyUserToken(token: string) {
+export function verifyUserToken(token: string): AuthUser {
   return jwt.verify(token, process.env.JWT_SECRET || 'dev-secret') as AuthUser;
 }
 
@@ -36,32 +36,23 @@ export async function createUser({ name, email, password }: { name: string; emai
     throw new Error('User already exists');
   }
 
-  const passwordHash = await hashPassword(password);
-
   return prisma.user.create({
     data: {
       name,
       email,
-      passwordHash,
+      passwordHash: await hashPassword(password),
       role: 'USER',
     },
   });
 }
 
-export function getCurrentUser(): AuthUser | null {
+export function getCurrentUser() {
+  const token = cookies().get('ali_sr_token')?.value;
+  if (!token) return null;
+
   try {
-    const token = cookies().get('ali_sr_token')?.value;
-    if (!token) return null;
     return verifyUserToken(token);
   } catch {
     return null;
   }
-}
-
-export function requireAdmin() {
-  const user = getCurrentUser();
-  if (!user || user.role !== 'ADMIN') {
-    return null;
-  }
-  return user;
 }

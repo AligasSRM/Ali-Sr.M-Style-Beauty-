@@ -1,10 +1,10 @@
 import { prisma } from '@/lib/prisma';
-import { requireAdmin } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
 export default async function AdminOrdersPage() {
-  const user = requireAdmin();
-  if (!user) {
+  const user = getCurrentUser();
+  if (!user || user.role !== 'ADMIN') {
     redirect('/login');
   }
 
