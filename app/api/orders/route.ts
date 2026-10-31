@@ -2,31 +2,29 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
-  const orders = await prisma.order.findMany({
-    include: { items: true },
+  const products = await prisma.product.findMany({
     orderBy: { createdAt: 'desc' },
   });
 
-  return NextResponse.json({ success: true, data: orders });
+  return NextResponse.json({ success: true, data: products });
 }
 
 export async function POST(request: Request) {
   const body = await request.json();
 
-  const order = await prisma.order.create({
+  const product = await prisma.product.create({
     data: {
-      userId: String(body.userId || 'demo-user'),
-      total: Number(body.total || 0),
-      status: String(body.status || 'pending'),
-      items: {
-        create: (body.items || []).map((item: { productId: string; quantity: number; unitPrice: number }) => ({
-          productId: item.productId,
-          quantity: Number(item.quantity || 1),
-          unitPrice: Number(item.unitPrice || 0),
-        })),
-      },
+      name: String(body.name || 'New Product'),
+      slug: String(body.slug || body.name).toLowerCase().replace(/\s+/g, '-'),
+      category: String(body.category || 'Fashion'),
+      price: Number(body.price || 0),
+      rating: Number(body.rating || 0),
+      image: String(body.image || 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80'),
+      description: String(body.description || 'Product description'),
+      badge: String(body.badge || 'New'),
+      stock: Number(body.stock || 0),
     },
   });
 
-  return NextResponse.json({ success: true, data: order }, { status: 201 });
+  return NextResponse.json({ success: true, data: product }, { status: 201 });
 }

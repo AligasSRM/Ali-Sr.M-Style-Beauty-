@@ -1,32 +1,40 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
-  const products = await prisma.product.findMany({
-    orderBy: { createdAt: 'desc' },
+export async function GET(_: Request, { params }: { params: { id: string } }) {
+  const product = await prisma.product.findUnique({
+    where: { id: params.id },
   });
 
-  return NextResponse.json({ success: true, data: products });
+  if (!product) {
+    return NextResponse.json({ success: false, message: 'Product not found' }, { status: 404 });
+  }
+
+  return NextResponse.json({ success: true, data: product });
 }
 
-export async function POST(request: Request) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   const body = await request.json();
 
-  const product = await prisma.product.create({
+  const product = await prisma.product.update({
+    where: { id: params.id },
     data: {
-      name: String(body.name || 'New Product'),
-      slug: String(body.slug || body.name?.toLowerCase().replace(/\s+/g, '-') || 'new-product'),
-      category: String(body.category || 'Fashion'),
-      price: Number(body.price || 0),
+      name: body.name,
+      slug: body.slug,
+      category: body.category,
+      price: Number(body.price),
       rating: Number(body.rating || 0),
-      image: String(
-        body.image || 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80',
-      ),
-      description: String(body.description || 'New product added to the storefront.'),
-      badge: String(body.badge || 'New'),
+      image: body.image,
+      description: body.description,
+      badge: body.badge,
       stock: Number(body.stock || 0),
     },
   });
 
-  return NextResponse.json({ success: true, data: product }, { status: 201 });
+  return NextResponse.json({ success: true, data: product });
+}
+
+export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+  await prisma.product.delete({ where: { id: params.id } });
+  return NextResponse.json({ success: true });
 }

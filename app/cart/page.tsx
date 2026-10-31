@@ -1,76 +1,68 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useCart } from '@/components/CartProvider';
-import products, { formatPrice } from '@/lib/products';
 
-export default function CartPage() {
-  const { items, totalPrice, totalItems, updateQuantity, removeFromCart } = useCart();
+type Product = {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  rating: number;
+  image: string;
+  description: string;
+  badge: string;
+  stock?: number;
+};
 
-  const cartProducts = items
-    .map((item) => {
-      const product = products.find((entry) => entry.id === item.id);
-      if (!product) return null;
-      return { ...product, quantity: item.quantity };
-    })
-    .filter(Boolean) as Array<{ id: string; name: string; price: number; image: string; quantity: number }>;
+export default function ProductDetailPage({ params }: { params: { id: string } }) {
+  const { addToCart } = useCart();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/products/${params.id}`)
+      .then((res) => res.json())
+      .then((data) => setProduct(data?.data || null))
+      .finally(() => setLoading(false));
+  }, [params.id]);
+
+  if (loading) {
+    return <main className="page-shell"><div className="panel">Loading product...</div></main>;
+  }
+
+  if (!product) {
+    return <main className="page-shell"><div className="panel">Product not found.</div></main>;
+  }
 
   return (
-    <main className="page-shell">
-      <section className="section-block">
-        <div className="section-header">
-          <div>
-            <p className="eyebrow">Shopping cart</p>
-            <h1>{totalItems} item(s) selected</h1>
+    <main className="page-shell product-detail-page">
+      <div className="product-detail-card panel">
+        <img src={product.image} alt={product.name} className="product-detail-image" />
+
+        <div className="product-detail-content">
+          <p className="eyebrow">{product.category}</p>
+          <h1>{product.name}</h1>
+          <div className="product-detail-meta">
+            <span className="badge">{product.badge}</span>
+            <span className="rating-pill">★ {product.rating}</span>
           </div>
-          <Link href="/products" className="secondary-button">Keep shopping</Link>
+          <p className="lead">{product.description}</p>
+
+          <div className="product-price-row">
+            <strong>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(product.price)}</strong>
+            <span>{product.stock ?? 0} in stock</span>
+          </div>
+
+          <div className="hero-actions">
+            <button className="primary-button" onClick={() => addToCart(product.id)}>
+              Add to cart
+            </button>
+            <Link href="/products" className="secondary-button">Continue shopping</Link>
+          </div>
         </div>
-
-        {cartProducts.length === 0 ? (
-          <div className="panel empty-card">
-            <h2>Your cart is empty</h2>
-            <p>Explore the catalog and begin your style journey.</p>
-            <Link href="/products" className="primary-button">Browse products</Link>
-          </div>
-        ) : (
-          <div className="cart-layout">
-            <div className="cart-items">
-              {cartProducts.map((product) => (
-                <div key={product.id} className="panel cart-item">
-                  <img src={product.image} alt={product.name} className="mini-product-image" />
-                  <div className="cart-item-meta">
-                    <h3>{product.name}</h3>
-                    <p>{formatPrice(product.price)}</p>
-                  </div>
-                  <div className="quantity-controls">
-                    <button onClick={() => updateQuantity(product.id, -1)}>-</button>
-                    <span>{product.quantity}</span>
-                    <button onClick={() => updateQuantity(product.id, 1)}>+</button>
-                  </div>
-                  <button className="remove-button" onClick={() => removeFromCart(product.id)}>Remove</button>
-                </div>
-              ))}
-            </div>
-
-            <aside className="panel summary-card">
-              <h2>Order summary</h2>
-              <div className="summary-row">
-                <span>Subtotal</span>
-                <strong>{formatPrice(totalPrice)}</strong>
-              </div>
-              <div className="summary-row">
-                <span>Shipping</span>
-                <strong>Free</strong>
-              </div>
-              <div className="summary-row total-row">
-                <span>Total</span>
-                <strong>{formatPrice(totalPrice)}</strong>
-              </div>
-              <button className="primary-button full-width">Proceed to checkout</button>
-            </aside>
-          </div>
-        )}
-      </section>
+      </div>
     </main>
   );
 }
