@@ -10,10 +10,10 @@ async function main() {
       category: 'Fashion',
       price: 129,
       rating: 4.8,
-      image:
-        'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80',
-      description: 'A premium styling set designed for elevated everyday looks and social-ready elegance.',
+      image: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80',
+      description: 'Premium elegant fashion set.',
       badge: 'Best Seller',
+      stock: 20,
     },
     {
       name: 'Aura Glow Kit',
@@ -21,10 +21,10 @@ async function main() {
       category: 'Beauty',
       price: 89,
       rating: 4.7,
-      image:
-        'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
-      description: 'Glow-focused essentials featuring hydration, finish, and a radiant finish for all skin tones.',
+      image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
+      description: 'Glow-focused beauty essentials.',
       badge: 'New',
+      stock: 10,
     },
     {
       name: 'Sculpt Street Sneaker',
@@ -32,21 +32,10 @@ async function main() {
       category: 'Accessories',
       price: 149,
       rating: 4.6,
-      image:
-        'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80',
-      description: 'Comfort and street-edge look in a modern silhouette for everyday styling.',
+      image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80',
+      description: 'Modern streetwear sneaker.',
       badge: 'Trending',
-    },
-    {
-      name: 'Luna Tailor Canvas',
-      slug: 'luna-tailor-canvas',
-      category: 'AI Design',
-      price: 199,
-      rating: 4.9,
-      image:
-        'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=900&q=80',
-      description: 'A digital design concept pack for personalized outfit generation and tailored styling ideas.',
-      badge: 'AI Pick',
+      stock: 15,
     },
   ];
 
@@ -58,45 +47,26 @@ async function main() {
     });
   }
 
-  const user = await prisma.user.upsert({
+  const demoUser = await prisma.user.upsert({
     where: { email: 'demo@ali-sr.com' },
-    update: { name: 'Demo Shopper' },
+    update: {},
     create: {
-      name: 'Demo Shopper',
+      name: 'Demo User',
       email: 'demo@ali-sr.com',
+      passwordHash: '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92b9s3mHqQXf2W7KpJQy2',
+      role: 'USER',
     },
   });
 
-  const product = await prisma.product.findFirst({
-    where: { slug: 'velvet-studio-set' },
-  });
-
-  if (product) {
-    await prisma.order.create({
-      data: {
-        userId: user.id,
-        total: product.price,
-        status: 'paid',
-        items: {
-          create: {
-            productId: product.id,
-            quantity: 1,
-            unitPrice: product.price,
-          },
-        },
-      },
-    });
-  }
-
-  console.log('Seed complete');
+  console.log('Seed complete', { demoUser: demoUser.email });
 }
 
 main()
   .then(async () => {
     await prisma.$disconnect();
   })
-  .catch(async (e) => {
-    console.error(e);
+  .catch(async (error) => {
+    console.error(error);
     await prisma.$disconnect();
     process.exit(1);
   });

@@ -6,10 +6,7 @@ export async function GET() {
     orderBy: { createdAt: 'desc' },
   });
 
-  return NextResponse.json({
-    success: true,
-    data: products,
-  });
+  return NextResponse.json({ success: true, data: products });
 }
 
 export async function POST(request: Request) {
@@ -22,9 +19,12 @@ export async function POST(request: Request) {
       category: String(body.category || 'Fashion'),
       price: Number(body.price || 0),
       rating: Number(body.rating || 0),
-      image: String(body.image || 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80'),
-      description: String(body.description || 'New product added to the storefront. '),
+      image: String(
+        body.image || 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80',
+      ),
+      description: String(body.description || 'New product added to the storefront.'),
       badge: String(body.badge || 'New'),
+      stock: Number(body.stock || 0),
     },
   });
 

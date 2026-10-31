@@ -20,12 +20,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     where: { id: params.id },
     data: {
       name: body.name,
+      slug: body.slug,
       category: body.category,
-      price: body.price ? Number(body.price) : undefined,
-      rating: body.rating ? Number(body.rating) : undefined,
+      price: body.price !== undefined ? Number(body.price) : undefined,
+      rating: body.rating !== undefined ? Number(body.rating) : undefined,
       image: body.image,
       description: body.description,
       badge: body.badge,
+      stock: body.stock !== undefined ? Number(body.stock) : undefined,
     },
   });
 

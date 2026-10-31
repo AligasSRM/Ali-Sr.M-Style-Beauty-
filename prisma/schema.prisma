@@ -7,37 +7,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
-  id          String   @id @default(cuid())
-  name        String
-  email       String   @unique
-  createdAt   DateTime @default(now())
-  orders      Order[]
-  wishlists   Wishlist[]
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  orders       Order[]
+  wishlists    Wishlist[]
 }
 
 model Product {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   name        String
-  slug        String   @unique
+  slug        String      @unique
   category    String
   price       Float
-  rating      Float    @default(0)
+  rating      Float       @default(0)
   image       String
   description String
   badge       String?
-  createdAt   DateTime @default(now())
+  stock       Int         @default(0)
+  createdAt   DateTime    @default(now())
   orderItems  OrderItem[]
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  userId      String
-  total       Float
-  status      String      @default("pending")
-  createdAt   DateTime    @default(now())
-  user        User        @relation(fields: [userId], references: [id])
-  items       OrderItem[]
+  id        String      @id @default(cuid())
+  userId    String
+  total     Float
+  status    String      @default("pending")
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id])
+  items     OrderItem[]
 }
 
 model OrderItem {
