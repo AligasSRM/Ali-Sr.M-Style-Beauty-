@@ -1,19 +1,33 @@
-import { NextResponse } from 'next/server';
-import { requireUser } from '@/lib/auth';
-import { createOrderFromCart } from '@/lib/checkout';
-
-export async function POST(request: Request) {
-  try {
-    const user = await requireUser(request);
-    const body = await request.json().catch(() => ({}));
-    const items = Array.isArray(body.items) ? body.items : [];
-    const order = await createOrderFromCart(user.id, items, String(body.status ?? 'pending'));
-
-    return NextResponse.json({ success: true, data: order }, { status: 201 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to complete checkout';
-    const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 400;
-
-    return NextResponse.json({ success: false, message }, { status });
+{
+  "name": "ali-sr-m-style-beauty",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test ./tests/**/*.test.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.17.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "next": "14.2.15",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.1",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "20.14.12",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "prisma": "5.17.0",
+    "tsx": "4.17.0",
+    "typescript": "5.5.4"
   }
 }

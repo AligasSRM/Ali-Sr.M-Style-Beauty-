@@ -1,68 +1,70 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAdmin } from '@/lib/auth';
+import { getCurrentUserFromRequest } from '@/lib/auth';
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
-  const product = await prisma.product.findUnique({
-    where: { id: params.id },
+export async function GET(request: Request) {
+  const user = await getCurrentUserFromRequest(request);
+  if (!user) {
+    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  }
+
+  const orders = await prisma.order.findMany({
+    where: user.role === 'ADMIN' ? {} : { userId: user.id },
+    include: { items: true },
+    orderBy: { createdAt: 'desc' },
   });
 
-  if (!product) {
-    return NextResponse.json({ success: false, message: 'Product not found' }, { status: 404 });
-  }
-
-  return NextResponse.json({ success: true, data: product });
+  return NextResponse.json({ success: true, data: orders });
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request) {
   try {
-    await requireAdmin(request);
-  } catch {
-    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-  }
+    const user = await getCurrentUserFromRequest(request);
+    if (!user) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
 
-  const body = await request.json().catch(() => ({}));
-  const slugValue = String(body.slug ?? body.name ?? '').trim();
+    const body = await request.json().catch(() => ({}));
+    const items = Array.isArray(body.items) ? body.items : [];
+    const total = Number(body.total ?? 0);
 
-  try {
-    const product = await prisma.product.update({
-      where: { id: params.id },
+    if (!items.length) {
+      return NextResponse.json({ success: false, message: 'Cart is empty.' }, { status: 400 });
+    }
+
+    const productRecords = await Promise.all(
+      items.map(async (item: any) => {
+        const product = await prisma.product.findUnique({ where: { id: String(item.productId) } });
+        if (!product) {
+          throw new Error(`Product not found: ${item.productId}`);
+        }
+
+        return {
+          product,
+          quantity: Number(item.quantity ?? 1),
+        };
+      }),
+    );
+
+    const order = await prisma.order.create({
       data: {
-        name: body.name ? String(body.name).trim() : undefined,
-        slug: slugValue ? slugValue.toLowerCase().replace(/\s+/g, '-') : undefined,
-        category: body.category ? String(body.category).trim() : undefined,
-        price: body.price !== undefined ? Number(body.price) : undefined,
-        rating: body.rating !== undefined ? Number(body.rating || 0) : undefined,
-        image: body.image ? String(body.image) : undefined,
-        description: body.description ? String(body.description).trim() : undefined,
-        badge: body.badge !== undefined ? String(body.badge).trim() : undefined,
-        stock: body.stock !== undefined ? Number(body.stock || 0) : undefined,
+        userId: user.id,
+        total: Number(total || productRecords.reduce((sum, value) => sum + value.product.price * value.quantity, 0)),
+        status: String(body.status ?? 'pending'),
+        items: {
+          create: productRecords.map((entry) => ({
+            productId: entry.product.id,
+            quantity: Number(entry.quantity ?? 1),
+            unitPrice: entry.product.price,
+          })),
+        },
       },
+      include: { items: true },
     });
 
-    return NextResponse.json({ success: true, data: product });
+    return NextResponse.json({ success: true, data: order }, { status: 201 });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : 'Unable to update product' },
-      { status: 400 },
-    );
-  }
-}
-
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  try {
-    await requireAdmin(request);
-  } catch {
-    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    await prisma.product.delete({ where: { id: params.id } });
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : 'Unable to delete product' },
-      { status: 400 },
-    );
+    const message = error instanceof Error ? error.message : 'Unable to create order';
+    return NextResponse.json({ success: false, message }, { status: 400 });
   }
 }

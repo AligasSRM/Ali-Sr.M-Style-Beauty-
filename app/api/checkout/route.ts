@@ -1,22 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getCurrentUserFromRequest, requireUser } from '@/lib/auth';
+import { requireUser } from '@/lib/auth';
 import { createOrderFromCart } from '@/lib/checkout';
-
-export async function GET(request: Request) {
-  const user = await getCurrentUserFromRequest(request);
-  if (!user) {
-    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-  }
-
-  const orders = await prisma.order.findMany({
-    where: user.role === 'ADMIN' ? {} : { userId: user.id },
-    include: { items: true },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  return NextResponse.json({ success: true, data: orders });
-}
 
 export async function POST(request: Request) {
   try {
@@ -27,13 +11,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: order }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to create order';
-    const status =
-      message === 'Unauthorized'
-        ? 401
-        : message === 'Forbidden'
-          ? 403
-          : 400;
+    const message = error instanceof Error ? error.message : 'Unable to complete checkout';
+    const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 400;
 
     return NextResponse.json({ success: false, message }, { status });
   }
