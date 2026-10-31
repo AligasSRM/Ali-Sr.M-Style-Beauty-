@@ -17,11 +17,11 @@ export function LoginForm() {
 
     const result = await response.json();
     if (result.success) {
-      localStorage.setItem('ali-sr-token', result.data.token);
       window.location.href = '/admin';
-    } else {
-      alert(result.message || 'Login failed');
+      return;
     }
+
+    alert(result.message || 'Login failed');
   }
 
   return (

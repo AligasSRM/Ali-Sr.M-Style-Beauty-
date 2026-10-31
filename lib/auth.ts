@@ -1,6 +1,14 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  role: string;
+  name: string;
+};
 
 export async function hashPassword(password: string) {
   return bcrypt.hash(password, 10);
@@ -10,16 +18,16 @@ export async function verifyPassword(password: string, hash: string) {
   return bcrypt.compare(password, hash);
 }
 
-export function signUserToken(user: { id: string; email: string; role?: string }) {
+export function signUserToken(user: AuthUser) {
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role || 'USER' },
+    { id: user.id, email: user.email, role: user.role || 'USER', name: user.name },
     process.env.JWT_SECRET || 'dev-secret',
     { expiresIn: '7d' },
   );
 }
 
 export function verifyUserToken(token: string) {
-  return jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
+  return jwt.verify(token, process.env.JWT_SECRET || 'dev-secret') as AuthUser;
 }
 
 export async function createUser({ name, email, password }: { name: string; email: string; password: string }) {
@@ -38,4 +46,22 @@ export async function createUser({ name, email, password }: { name: string; emai
       role: 'USER',
     },
   });
+}
+
+export function getCurrentUser(): AuthUser | null {
+  try {
+    const token = cookies().get('ali_sr_token')?.value;
+    if (!token) return null;
+    return verifyUserToken(token);
+  } catch {
+    return null;
+  }
+}
+
+export function requireAdmin() {
+  const user = getCurrentUser();
+  if (!user || user.role !== 'ADMIN') {
+    return null;
+  }
+  return user;
 }

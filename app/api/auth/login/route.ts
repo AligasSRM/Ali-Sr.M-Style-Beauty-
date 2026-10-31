@@ -17,27 +17,22 @@ export async function POST(request: Request) {
   });
 
   if (!user) {
-    return NextResponse.json(
-      { success: false, message: 'Invalid credentials.' },
-      { status: 401 },
-    );
+    return NextResponse.json({ success: false, message: 'Invalid credentials.' }, { status: 401 });
   }
 
   const valid = await verifyPassword(body.password, user.passwordHash);
   if (!valid) {
-    return NextResponse.json(
-      { success: false, message: 'Invalid credentials.' },
-      { status: 401 },
-    );
+    return NextResponse.json({ success: false, message: 'Invalid credentials.' }, { status: 401 });
   }
 
   const token = signUserToken({
     id: user.id,
     email: user.email,
     role: user.role,
+    name: user.name,
   });
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     success: true,
     data: {
       token,
@@ -49,4 +44,14 @@ export async function POST(request: Request) {
       },
     },
   });
+
+  response.cookies.set('ali_sr_token', token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7,
+  });
+
+  return response;
 }
