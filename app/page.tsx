@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { ProductGrid } from '@/components/ProductGrid';
-import products from '@/lib/products';
+import { getAllProducts } from '@/lib/catalog';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const products = await getAllProducts();
   const featured = products.slice(0, 3);
 
   return (
@@ -45,26 +46,6 @@ export default function HomePage() {
           <Link href="/products" className="text-link">View all</Link>
         </div>
         <ProductGrid items={featured} />
-      </section>
-
-      <section className="section-block two-column">
-        <div className="panel feature-panel">
-          <p className="eyebrow">AI Styling</p>
-          <h3>Virtual look design</h3>
-          <p>
-            Upload a photo, compare outfit concepts, and generate style suggestions based on your mood, event, and wardrobe.
-          </p>
-          <Link href="/style" className="text-link">Open style center</Link>
-        </div>
-
-        <div className="panel feature-panel">
-          <p className="eyebrow">Commerce</p>
-          <h3>Curated storefront</h3>
-          <p>
-            Built for products, carts, order flow, and premium retail experiences with simplified operations for launch.
-          </p>
-          <Link href="/products" className="text-link">Browse storefront</Link>
-        </div>
       </section>
     </main>
   );

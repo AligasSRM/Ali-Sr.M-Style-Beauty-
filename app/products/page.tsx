@@ -1,8 +1,10 @@
 import Link from 'next/link';
-import products from '@/lib/products';
 import { ProductGrid } from '@/components/ProductGrid';
+import { getAllProducts } from '@/lib/catalog';
 
-export default function ProductsPage() {
+export default async function ProductsPage() {
+  const products = await getAllProducts();
+
   return (
     <main className="page-shell">
       <section className="section-block">
