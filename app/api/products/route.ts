@@ -1,8 +1,12 @@
-import products from '@/lib/products';
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function GET() {
-  return Response.json({
-    success: true,
-    data: products,
+  const products = await prisma.product.findMany({
+    orderBy: { createdAt: 'desc' },
   });
+
+  return NextResponse.json({ success: true, data: products });
 }
