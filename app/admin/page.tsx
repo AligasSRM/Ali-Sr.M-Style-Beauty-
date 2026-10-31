@@ -1,10 +1,12 @@
+import { AdminSidebar } from '@/components/AdminSidebar';
+
 export default function AdminPage() {
   return (
     <main className="page-shell admin-layout">
-      <aside>placeholder</aside>
+      <AdminSidebar />
       <section className="panel admin-card">
         <h1>Dashboard</h1>
-        <p>Administration overview</p>
+        <p>Overview of products, orders, and activity</p>
       </section>
     </main>
   );
