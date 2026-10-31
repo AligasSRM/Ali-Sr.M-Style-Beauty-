@@ -1,184 +1,52 @@
-'use client';
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth';
 
-import { useEffect, useState } from 'react';
+export async function GET() {
+  const products = await prisma.product.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
 
-type Product = {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  rating: number;
-  image: string;
-  description: string;
-  badge: string;
-  stock: number;
-  slug: string;
-};
+  return NextResponse.json({ success: true, data: products });
+}
 
-const emptyForm = {
-  name: '',
-  slug: '',
-  category: '',
-  price: 0,
-  rating: 0,
-  image: '',
-  description: '',
-  badge: 'New',
-  stock: 0,
-};
-
-export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  async function loadProducts() {
-    const res = await fetch('/api/products');
-    const data = await res.json();
-    setProducts(data?.data || []);
+export async function POST(request: Request) {
+  try {
+    await requireAdmin(request);
+  } catch {
+    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   }
 
-  useEffect(() => {
-    loadProducts();
-  }, []);
+  const body = await request.json().catch(() => ({}));
+  const name = String(body.name ?? '').trim();
+  const slugValue = String(body.slug ?? body.name ?? '').trim();
+  const category = String(body.category ?? 'Fashion').trim();
+  const description = String(body.description ?? 'Product description').trim();
+  const image = String(body.image ?? 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80');
+  const badge = String(body.badge ?? 'New').trim();
+  const price = Number(body.price ?? 0);
+  const rating = Number(body.rating ?? 0);
+  const stock = Number(body.stock ?? 0);
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-
-    const payload = {
-      ...form,
-      slug: form.slug || form.name.toLowerCase().replace(/\s+/g, '-'),
-      price: Number(form.price),
-      rating: Number(form.rating),
-      stock: Number(form.stock),
-    };
-
-    const method = editingId ? 'PUT' : 'POST';
-    const url = editingId ? `/api/products/${editingId}` : '/api/products';
-
-    const response = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (response.ok) {
-      setForm(emptyForm);
-      setEditingId(null);
-      loadProducts();
-    }
+  if (!name) {
+    return NextResponse.json({ success: false, message: 'Product name is required.' }, { status: 400 });
   }
 
-  async function handleEdit(product: Product) {
-    setEditingId(product.id);
-    setForm({
-      name: product.name,
-      slug: product.slug,
-      category: product.category,
-      price: product.price,
-      rating: product.rating,
-      image: product.image,
-      description: product.description,
-      badge: product.badge,
-      stock: product.stock,
-    });
-  }
+  const slug = (slugValue || name).toLowerCase().replace(/\s+/g, '-');
 
-  async function handleDelete(id: string) {
-    const response = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-    if (response.ok) {
-      loadProducts();
-    }
-  }
+  const product = await prisma.product.create({
+    data: {
+      name,
+      slug,
+      category: category || 'Fashion',
+      price,
+      rating,
+      image,
+      description,
+      badge: badge || 'New',
+      stock,
+    },
+  });
 
-  return (
-    <main className="page-shell admin-layout">
-      <aside className="panel admin-sidebar">
-        <h3>Admin</h3>
-        <nav>
-          <a href="/admin">Overview</a>
-          <a href="/admin/products">Products</a>
-          <a href="/admin/orders">Orders</a>
-        </nav>
-      </aside>
-
-      <section className="panel admin-card">
-        <h1>Manage products</h1>
-
-        <form onSubmit={handleSubmit} className="admin-form">
-          <div className="admin-grid">
-            <label>
-              Name
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            </label>
-            <label>
-              Slug
-              <input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
-            </label>
-            <label>
-              Category
-              <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required />
-            </label>
-            <label>
-              Price
-              <input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} required />
-            </label>
-            <label>
-              Rating
-              <input type="number" step="0.1" value={form.rating} onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })} />
-            </label>
-            <label>
-              Stock
-              <input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })} required />
-            </label>
-            <label>
-              Badge
-              <input value={form.badge} onChange={(e) => setForm({ ...form, badge: e.target.value })} />
-            </label>
-            <label>
-              Image URL
-              <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
-            </label>
-            <label className="full-width">
-              Description
-              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} />
-            </label>
-          </div>
-
-          <div className="admin-actions">
-            <button type="submit" className="primary-button">
-              {editingId ? 'Update product' : 'Create product'}
-            </button>
-            {editingId && (
-              <button type="button" className="secondary-button" onClick={() => {
-                setEditingId(null);
-                setForm(emptyForm);
-              }}>
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
-
-        <div className="admin-list">
-          {products.map((product) => (
-            <div key={product.id} className="admin-item">
-              <div>
-                <strong>{product.name}</strong>
-                <span>{product.category}</span>
-              </div>
-              <div>
-                <span>{product.stock} in stock</span>
-                <span>{product.price}$</span>
-              </div>
-              <div className="inline-actions">
-                <button className="secondary-button small-button" onClick={() => handleEdit(product)}>Edit</button>
-                <button className="ghost-button small-button" onClick={() => handleDelete(product.id)}>Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </main>
-  );
+  return NextResponse.json({ success: true, data: product }, { status: 201 });
 }

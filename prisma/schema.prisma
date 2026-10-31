@@ -1,67 +1,47 @@
-generator client {
-  provider = "prisma-client-js"
+'use client';
+
+import Link from 'next/link';
+import { useCart } from './CartProvider';
+import products, { formatPrice } from '@/lib/products';
+
+export function ProductGrid({ items = products }: { items?: typeof products }) {
+  return (
+    <div className="product-grid">
+      {items.map((product) => (
+        <article key={product.id} className="product-card panel">
+          <Link href={`/product/${product.id}`}>
+            <img src={product.image} alt={product.name} className="product-thumb" />
+          </Link>
+          <div className="product-card-body">
+            <div className="product-topline">
+              <span>{product.category}</span>
+              <span className="badge mini">{product.badge}</span>
+            </div>
+            <h3>{product.name}</h3>
+            <p>{product.description}</p>
+            <div className="product-footer">
+              <strong>{formatPrice(product.price)}</strong>
+              <div className="rating-pill">★ {product.rating}</div>
+            </div>
+            <div className="card-actions">
+              <Link href={`/product/${product.id}`} className="secondary-button small-button">
+                Details
+              </Link>
+              <AddToCartButton productId={product.id} />
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+export function AddToCartButton({ productId }: { productId: string }) {
+  const { addToCart } = useCart();
 
-enum Role {
-  USER
-  ADMIN
-}
-
-model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         Role     @default(USER)
-  createdAt    DateTime @default(now())
-  orders       Order[]
-  wishlists    Wishlist[]
-}
-
-model Product {
-  id          String      @id @default(cuid())
-  name        String
-  slug        String      @unique
-  category    String
-  price       Float
-  rating      Float       @default(0)
-  image       String
-  description String
-  badge       String?
-  stock       Int         @default(0)
-  createdAt   DateTime    @default(now())
-  orderItems  OrderItem[]
-}
-
-model Order {
-  id        String      @id @default(cuid())
-  userId    String
-  total     Float
-  status    String      @default("pending")
-  createdAt DateTime    @default(now())
-  user      User        @relation(fields: [userId], references: [id])
-  items     OrderItem[]
-}
-
-model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int     @default(1)
-  unitPrice Float
-  order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
-}
-
-model Wishlist {
-  id        String   @id @default(cuid())
-  userId    String
-  productId String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  return (
+    <button className="primary-button small-button" onClick={() => addToCart(productId)}>
+      Add to cart
+    </button>
+  );
 }

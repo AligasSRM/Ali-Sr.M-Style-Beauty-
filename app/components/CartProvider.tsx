@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import products, { formatPrice, getProductById } from '@/lib/products';
+import { getProductById } from '@/lib/products';
 
 type CartItem = {
   id: string;
@@ -15,6 +15,7 @@ type CartContextValue = {
   addToCart: (productId: string, quantity?: number) => void;
   updateQuantity: (productId: string, delta: number) => void;
   removeFromCart: (productId: string) => void;
+  clearCart: () => void;
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -45,6 +46,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           item.id === productId ? { ...item, quantity: item.quantity + quantity } : item,
         );
       }
+
       return [...current, { id: productId, quantity }];
     });
   };
@@ -63,10 +65,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((current) => current.filter((item) => item.id !== productId));
   };
 
-  const totalItems = useMemo(
-    () => items.reduce((sum, item) => sum + item.quantity, 0),
-    [items],
-  );
+  const clearCart = () => setItems([]);
+
+  const totalItems = useMemo(() => items.reduce((sum, item) => sum + item.quantity, 0), [items]);
 
   const totalPrice = useMemo(
     () =>
@@ -78,7 +79,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo<CartContextValue>(
-    () => ({ items, totalItems, totalPrice, addToCart, updateQuantity, removeFromCart }),
+    () => ({ items, totalItems, totalPrice, addToCart, updateQuantity, removeFromCart, clearCart }),
     [items, totalItems, totalPrice],
   );
 
@@ -90,6 +91,7 @@ export function useCart() {
   if (!context) {
     throw new Error('useCart must be used within CartProvider');
   }
+
   return context;
 }
 
@@ -109,7 +111,7 @@ export function CartSummary() {
   return (
     <div className="summary-inline">
       <span>{totalItems} items</span>
-      <strong>{formatPrice(totalPrice)}</strong>
+      <strong>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalPrice)}</strong>
     </div>
   );
 }
